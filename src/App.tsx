@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { Points } from "./components/Points";
+import { Points, colorNames } from "./components/Points";
 import { ReactHook, DivClick, ButtonClick } from "./types";
-import { mapWithIndex, findLastIndex, replicate } from "fp-ts/lib/Array";
+import { mapWithIndex, findLastIndex, replicate, map } from "fp-ts/lib/Array";
 import { Strike } from "./components/Strike";
 import { toNullable } from "fp-ts/lib/Option";
 import { flow } from "fp-ts/lib/function";
 import { calculateSelected } from "./components/ColorRow";
+import { Die } from "./components/Die";
 
 export type Square = {
   value: number;
@@ -61,6 +62,7 @@ const App: React.FC = () => {
   const [blue, setBlue] = useState(createArrayOf(false));
   const [strikes, setStrikes] = useState(0);
   const [showScores, setShowScores] = useState(true);
+  const [dice, setDice] = useState([1, 2, 3, 4, 5, 6]);
 
   const toggleShowScores = () => setShowScores(!showScores);
 
@@ -74,6 +76,12 @@ const App: React.FC = () => {
     i + 1 === strikes ? 5 * (i + 1) : 0
   );
 
+  const rollDice = () =>
+    flow(
+      map(x => Math.ceil(Math.random() * 6)),
+      setDice
+    )(dice);
+
   return (
     <div>
       <Points
@@ -82,7 +90,7 @@ const App: React.FC = () => {
         setStatuses={setColors}
         setStatusOpen={selectNumber}
       />
-      <div className="flex mt-2 items-stretch">
+      <div className="flex mt-2">
         <div className="flex">
           {mapWithIndex((i, value: number) => (
             <Strike key={i} value={value} addStrike={addStrike} />
@@ -93,6 +101,17 @@ const App: React.FC = () => {
           onClick={toggleShowScores}
         >
           {(showScores ? "Hide" : "Show") + " Scores"}
+        </button>
+        <div className="flex">
+          {mapWithIndex((i, color: string) => (
+            <Die key={i} value={dice[i]} color={color} />
+          ))(["white", "white", ...colorNames])}
+        </div>
+        <button
+          className="mx-3 px-2 bg-gray-800 text-white rounded flex justify-center items-center"
+          onClick={rollDice}
+        >
+          Roll
         </button>
       </div>
     </div>

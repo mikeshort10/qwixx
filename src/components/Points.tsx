@@ -4,7 +4,7 @@ import { ColorRow } from "./ColorRow";
 import { ReactHook, Color, ButtonClick } from "../types";
 import { Square } from "../App";
 
-const colorNames: Color[] = ["red", "yellow", "green", "blue"];
+export const colorNames: Color[] = ["red", "yellow", "green", "blue"];
 const getHookName = (color: Color): string =>
   `set${color[0].toUpperCase()}${color.slice(1)}`;
 
