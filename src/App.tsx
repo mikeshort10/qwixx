@@ -32,26 +32,29 @@ const squareIsSelected = ({ isSelected }: Square) => isSelected;
 
 const lastSelectedIndex = flow(findLastIndex(squareIsSelected), toNullable);
 
-const selectNumber = (squares: Square[], setColor: ReactHook<Square[]>) => {
-  return (i: number): ButtonClick => () => {
-    const selectedSquare = squares[i];
-    if (selectedSquare.isDisabled || selectedSquare.isSelected) {
-      return;
-    }
-    if (selectedSquare.isLast && calculateSelected(squares) < 5) {
-      return;
-    }
-    const lastSelected = lastSelectedIndex(squares) || -1;
-    const nowDisabled = squares
-      .slice(lastSelected + 1, i)
-      .map(x => ({ ...x, isDisabled: true }));
-    const updatedSquare: Square = { ...squares[i], isSelected: true };
-    setColor([
-      ...squares.slice(0, lastSelected + 1),
-      ...nowDisabled,
-      updatedSquare,
-      ...squares.slice(i + 1)
-    ]);
+const selectNumber = (dice: number[]) => {
+  const [white1, white2, red, yellow, green, blue] = dice;
+  return (squares: Square[], setColor: ReactHook<Square[]>) => {
+    return (i: number): ButtonClick => () => {
+      const selectedSquare = squares[i];
+      if (selectedSquare.isDisabled || selectedSquare.isSelected) {
+        return;
+      }
+      if (selectedSquare.isLast && calculateSelected(squares) < 5) {
+        return;
+      }
+      const lastSelected = lastSelectedIndex(squares) || -1;
+      const nowDisabled = squares
+        .slice(lastSelected + 1, i)
+        .map(x => ({ ...x, isDisabled: true }));
+      const updatedSquare: Square = { ...squares[i], isSelected: true };
+      setColor([
+        ...squares.slice(0, lastSelected + 1),
+        ...nowDisabled,
+        updatedSquare,
+        ...squares.slice(i + 1)
+      ]);
+    };
   };
 };
 
@@ -81,6 +84,8 @@ const App: React.FC = () => {
       map(x => Math.ceil(Math.random() * 6)),
       setDice
     )(dice);
+
+  const selectNumberFromDice = selectNumber(dice);
 
   return (
     <div>
