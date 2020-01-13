@@ -1,22 +1,33 @@
 import React from "react";
-import { mapWithIndex, reduce, map, chain } from "fp-ts/lib/Array";
+import { reduce, mapWithIndex } from "fp-ts/lib/Array";
 import { NumberButton } from "./NumberButton";
 import { LockButton } from "./LockButton";
 import { flow } from "fp-ts/lib/function";
-import { tail } from "fp-ts/lib/NonEmptyArray";
+import { ButtonStatus, Color, ButtonClick } from "../types";
 
-const arrayOf11: null[] = Array(11).fill(null);
-
-const createNumberButton = (color: string) => {
-  return (i: number, x: null): JSX.Element => (
-    <NumberButton key={i} value={i + 2} color={color} />
-  );
+const createNumberButton = (
+  color: Color,
+  setStatusAtIndex: (i: number) => ButtonClick
+) => {
+  return (i: number, status: ButtonStatus): JSX.Element => {
+    const setStatus = setStatusAtIndex(i);
+    return (
+      <NumberButton
+        key={i}
+        status={status}
+        setStatus={setStatus}
+        value={i + 2}
+        color={color}
+      />
+    );
+  };
 };
 
 const createNumberButtonRow = (
-  color: string
-): ((fa: null[]) => JSX.Element[]) => {
-  return mapWithIndex(createNumberButton(color));
+  color: Color,
+  setStatusAtIndex: (i: number) => ButtonClick
+) => {
+  return mapWithIndex(createNumberButton(color, setStatusAtIndex));
 };
 
 const reverseElementsHandler = (acc: JSX.Element[], x: JSX.Element) => {
@@ -25,25 +36,26 @@ const reverseElementsHandler = (acc: JSX.Element[], x: JSX.Element) => {
 const reverseElements = reduce([] as JSX.Element[], reverseElementsHandler);
 
 type ColorRowProps = {
-  color: string;
+  color: Color;
   lowToHigh: boolean;
-  colors: boolean[];
-  setColors: React.Dispatch<React.SetStateAction<boolean[]>>;
+  statuses: ButtonStatus[];
+  setStatusAtIndex: (index: number) => ButtonClick;
 };
 
 export const ColorRow: React.FC<ColorRowProps> = ({
   color,
   lowToHigh,
-  colors,
-  setColors
+  statuses,
+  setStatusAtIndex
 }) => {
+  const createRow = createNumberButtonRow(color, setStatusAtIndex);
   const createNumberRow = lowToHigh
-    ? createNumberButtonRow(color)
-    : flow(createNumberButtonRow(color), reverseElements);
-  const numberRow = createNumberRow(arrayOf11);
-  const isLocked = colors[colors.length - 1];
+    ? createRow
+    : flow(createRow, reverseElements);
+  const numberRow = createNumberRow(statuses);
+  const isLocked = statuses[statuses.length - 1] === "selected";
   return (
-    <div className={`flex items-stretch bg-${color}-500`}>
+    <div className={`flex items-stretch bg-${color}-500 mt-1`}>
       {numberRow}
       <LockButton color={color} isLocked={isLocked} />
     </div>

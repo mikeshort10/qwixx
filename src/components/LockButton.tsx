@@ -10,7 +10,7 @@ export const LockButton: React.FC<NumberProps> = ({ isLocked, color }) => {
     <button
       className={`bg-${color}-300 rounded-full text-${color}-500 w-10 mx-1 my-2 hover:bg-${color}-200 active:bg-${color}-400 py-2 px-3`}
     >
-      L
+      {isLocked ? "X" : "L"}
     </button>
   );
 };
