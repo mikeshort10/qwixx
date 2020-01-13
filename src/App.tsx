@@ -93,7 +93,7 @@ const App: React.FC = () => {
         showScores={showScores}
         statuses={colors}
         setStatuses={setColors}
-        setStatusOpen={selectNumber}
+        setStatusOpen={selectNumberFromDice}
       />
       <div className="flex mt-2">
         <div className="flex">
