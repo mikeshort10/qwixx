@@ -1,29 +1,32 @@
 import React from "react";
-import { ButtonStatus, ButtonClick } from "../types";
+import { ButtonClick } from "../types";
+import { Square } from "../App";
 
 type NumberProps = {
-  status: ButtonStatus;
-  value: number;
+  square: Square;
   color: string;
   setStatus: ButtonClick;
 };
 
 export const NumberButton: React.FC<NumberProps> = ({
-  status,
-  value,
+  square: { isSelected, isDisabled, value },
   color,
   setStatus
 }) => {
-  const displayValue = status === "selected" ? "X" : value;
-  const eventColorClass = `hover:bg-${color}-200 active:bg-${color}-400`;
-  const selected = status === "selected" ? `text-white` : `text-${color}-500`;
+  const bgContrast = isSelected || isDisabled ? "500" : "300";
+  const textContrast = isSelected || !isDisabled ? "300" : "500";
+  const bgClass = `bg-${color}-${bgContrast} text-${color}-${textContrast}`;
+  const colorClass =
+    isDisabled || isSelected
+      ? ""
+      : `bg-${color}-300 text-${color}-500 hover:bg-${color}-200 active:bg-${color}-400`;
   return (
     <button
-      disabled={status === "disabled"}
-      className={`bg-${color}-300 font-bold ${eventColorClass} rounded w-10 ml-1 my-2 py-1 px-2 ${selected}`}
+      disabled={isDisabled}
+      className={`${colorClass} ${bgClass} font-bold rounded w-10 ml-1 my-2 py-1 px-2 `}
       onClick={setStatus}
     >
-      {displayValue}
+      {value}
     </button>
   );
 };

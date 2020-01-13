@@ -1,22 +1,28 @@
 import React from "react";
-import { reduce, mapWithIndex } from "fp-ts/lib/Array";
+import { mapWithIndex, reduce } from "fp-ts/lib/Array";
 import { NumberButton } from "./NumberButton";
 import { LockButton } from "./LockButton";
-import { flow } from "fp-ts/lib/function";
-import { ButtonStatus, Color, ButtonClick } from "../types";
+import { Color, ButtonClick } from "../types";
+import { Square } from "../App";
+
+const points = [0, 1, 3, 10, 15, 21, 28, 36, 45, 55, 66, 78];
+
+export const calculateSelected = reduce<Square, number>(
+  0,
+  (acc, { isSelected }) => (isSelected ? acc + 1 : acc)
+);
 
 const createNumberButton = (
   color: Color,
   setStatusAtIndex: (i: number) => ButtonClick
 ) => {
-  return (i: number, status: ButtonStatus): JSX.Element => {
+  return (i: number, square: Square): JSX.Element => {
     const setStatus = setStatusAtIndex(i);
     return (
       <NumberButton
         key={i}
-        status={status}
+        square={square}
         setStatus={setStatus}
-        value={i + 2}
         color={color}
       />
     );
@@ -30,34 +36,36 @@ const createNumberButtonRow = (
   return mapWithIndex(createNumberButton(color, setStatusAtIndex));
 };
 
-const reverseElementsHandler = (acc: JSX.Element[], x: JSX.Element) => {
-  return [x, ...acc];
-};
-const reverseElements = reduce([] as JSX.Element[], reverseElementsHandler);
-
 type ColorRowProps = {
   color: Color;
-  lowToHigh: boolean;
-  statuses: ButtonStatus[];
+  statuses: Square[];
+  showScores: boolean;
   setStatusAtIndex: (index: number) => ButtonClick;
 };
 
 export const ColorRow: React.FC<ColorRowProps> = ({
   color,
-  lowToHigh,
   statuses,
-  setStatusAtIndex
+  setStatusAtIndex,
+  showScores
 }) => {
   const createRow = createNumberButtonRow(color, setStatusAtIndex);
-  const createNumberRow = lowToHigh
-    ? createRow
-    : flow(createRow, reverseElements);
+  const createNumberRow = createRow;
   const numberRow = createNumberRow(statuses);
-  const isLocked = statuses[statuses.length - 1] === "selected";
+  const isLocked = statuses[statuses.length - 1].isSelected;
+  const pointsInRow = points[calculateSelected(statuses) + (isLocked ? 1 : 0)];
+
   return (
-    <div className={`flex items-stretch bg-${color}-500 mt-1`}>
+    <div className={`flex items-stretch bg-${color}-500 mt-1 h-full`}>
       {numberRow}
       <LockButton color={color} isLocked={isLocked} />
+      <div
+        className={`h-full w-10 flex justify-center items-center text-white ${
+          showScores ? "" : "hidden"
+        }`}
+      >
+        {pointsInRow}
+      </div>
     </div>
   );
 };

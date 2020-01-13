@@ -1,5 +1,3 @@
-export type ButtonStatus = "selected" | "disabled" | "open";
-
 export type Color = "red" | "yellow" | "green" | "blue";
 
 export type ReactHook<T> = React.Dispatch<React.SetStateAction<T>>;
