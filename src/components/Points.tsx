@@ -2,7 +2,7 @@ import React from "react";
 import { mapWithIndex } from "fp-ts/lib/Array";
 import { ColorRow } from "./ColorRow";
 import { ReactHook, Color, ButtonClick } from "../types";
-import { Square } from "../App";
+import { Square } from "../types";
 
 export const colorNames: Color[] = ["red", "yellow", "green", "blue"];
 const getHookName = (color: Color): string =>
@@ -14,7 +14,8 @@ type PointsProps = {
   showScores: boolean;
   readonly setStatusOpen: (
     colorState: Square[],
-    setColor: ReactHook<Square[]>
+    setColor: ReactHook<Square[]>,
+    color: Color
   ) => (index: number) => ButtonClick;
 };
 
@@ -27,7 +28,11 @@ export const Points: React.FC<PointsProps> = ({
   const createColorRow = (i: number, color: Color) => {
     const statusesAtColor = statuses[color];
     const setStatusesAtColor = setStatuses[getHookName(color)];
-    const setStatusAtIndex = setStatusOpen(statusesAtColor, setStatusesAtColor);
+    const setStatusAtIndex = setStatusOpen(
+      statusesAtColor,
+      setStatusesAtColor,
+      color
+    );
     return (
       <ColorRow
         key={i}

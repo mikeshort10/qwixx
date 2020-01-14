@@ -3,7 +3,7 @@ import { mapWithIndex, reduce } from "fp-ts/lib/Array";
 import { NumberButton } from "./NumberButton";
 import { LockButton } from "./LockButton";
 import { Color, ButtonClick } from "../types";
-import { Square } from "../App";
+import { Square } from "../types";
 
 const points = [0, 1, 3, 10, 15, 21, 28, 36, 45, 55, 66, 78];
 
