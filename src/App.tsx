@@ -1,12 +1,18 @@
 import React, { useState } from "react";
 import { Points, colorNames } from "./components/Points";
-import { ReactHook, DivClick, ButtonClick } from "./types";
-import { mapWithIndex, findLastIndex, replicate, map } from "fp-ts/lib/Array";
+import { ReactHook, DivClick } from "./types";
+import {
+  mapWithIndex,
+  findLastIndex,
+  replicate,
+  map,
+  modifyAt
+} from "fp-ts/lib/Array";
 import { Strike } from "./components/Strike";
-import { toNullable, fromNullable, compact, flatten } from "fp-ts/lib/Option";
-import { flow } from "fp-ts/lib/function";
-import { calculateSelected } from "./components/ColorRow";
+import { getOrElse } from "fp-ts/lib/Option";
+import { flow, Predicate, Endomorphism } from "fp-ts/lib/function";
 import { Die } from "./components/Die";
+import { pipe } from "fp-ts/lib/pipeable";
 
 export type Square = {
   value: number;
@@ -28,51 +34,90 @@ const createArrayOf = (lowToHigh = true, length = 11): Square[] => {
     );
 };
 
-const n = fromNullable(undefined);
-const s = fromNullable(1);
+// const squareIsSelected = ({ isSelected }: Square) => isSelected;
 
-const On = fromNullable(fromNullable(n));
-const Os = fromNullable(fromNullable(s));
+// const lastSelectedIndex = flow(findLastIndex(squareIsSelected), toNullable);
 
-const compactedN = compact(On);
-const flattenedN = flatten(On);
-const compactedS = compact(Os);
-const flattenedS = flatten(Os);
+// const selectNumber = (dice: number[]) => {
+//   // const [white1, white2, red, yellow, green, blue] = dice;
+//   return (squares: Square[], setColor: ReactHook<Square[]>) => {
+//     return (i: number): ButtonClick => () => {
+//       const selectedSquare = squares[i];
+//       if (selectedSquare.isDisabled || selectedSquare.isSelected) {
+//         return;
+//       }
+//       if (selectedSquare.isLast && calculateSelected(squares) < 5) {
+//         return;
+//       }
+//       const lastSelected = lastSelectedIndex(squares) || -1;
+//       const nowDisabled = squares
+//         .slice(lastSelected + 1, i)
+//         .map(x => ({ ...x, isDisabled: true }));
+//       const updatedSquare: Square = { ...squares[i], isSelected: true };
+//       setColor([
+//         ...squares.slice(0, lastSelected + 1),
+//         ...nowDisabled,
+//         updatedSquare,
+//         ...squares.slice(i + 1)
+//       ]);
+//     };
+//   };
+// };
 
-console.log(compactedN);
-console.log(flattenedN);
-console.log(compactedS);
-console.log(flattenedS);
+// const takeRightWhile = <A,>(predicate: Predicate<A>) => (as: A[]) =>
+//   pipe(as, reverse, takeLeftWhile(predicate), reverse);
 
-const squareIsSelected = ({ isSelected }: Square) => isSelected;
+const isSelectable = ({ isDisabled, isSelected }: Square) =>
+  !isDisabled && !isSelected;
 
-const lastSelectedIndex = flow(findLastIndex(squareIsSelected), toNullable);
+// const getRemainingSquares = (squares: Square[]) =>
+//   pipe(squares, takeRightWhile(isSelectable));
 
-const selectNumber = (dice: number[]) => {
-  const [white1, white2, red, yellow, green, blue] = dice;
-  return (squares: Square[], setColor: ReactHook<Square[]>) => {
-    return (i: number): ButtonClick => () => {
-      const selectedSquare = squares[i];
-      if (selectedSquare.isDisabled || selectedSquare.isSelected) {
-        return;
-      }
-      if (selectedSquare.isLast && calculateSelected(squares) < 5) {
-        return;
-      }
-      const lastSelected = lastSelectedIndex(squares) || -1;
-      const nowDisabled = squares
-        .slice(lastSelected + 1, i)
-        .map(x => ({ ...x, isDisabled: true }));
-      const updatedSquare: Square = { ...squares[i], isSelected: true };
-      setColor([
-        ...squares.slice(0, lastSelected + 1),
-        ...nowDisabled,
-        updatedSquare,
-        ...squares.slice(i + 1)
-      ]);
-    };
+const isBetweenExc = (end: number) => (start: number) => (n: number) =>
+  start < n && end < n;
+
+const getRangeToUpdate = <A,>(end: number, predicate: Predicate<A>, as: A[]) =>
+  pipe(
+    as,
+    findLastIndex(predicate),
+    getOrElse(() => 0),
+    isBetweenExc(end)
+  );
+
+type MRFIW = <A>(
+  modifier: Endomorphism<A>,
+  predicate: Predicate<A>
+) => (end: number) => (as: A[]) => A[];
+
+const modifyRightFromIndexWhile: MRFIW = (modifier, predicate) => end => as =>
+  pipe(
+    as,
+    mapWithIndex((i, a) =>
+      getRangeToUpdate(end, predicate, as)(i) ? modifier({ ...a }) : { ...a }
+    )
+  );
+
+const selectSquare = (square: Square) => ({ ...square, isDisabled: true });
+
+const modifyWhileUnselected = modifyRightFromIndexWhile(
+  selectSquare,
+  isSelectable
+);
+
+const passToIo = (fn: Function) => (x: any) => () => fn(x);
+
+const updateSquares = (squares: Square[], setColor: ReactHook<Square[]>) => {
+  return (index: number) => {
+    return pipe(
+      modifyWhileUnselected(index)(squares),
+      modifyAt(index, (a: Square) => ({ ...a, isSelected: true })),
+      getOrElse(() => squares),
+      passToIo(setColor)
+    );
   };
 };
+
+// todo: updateSquares not modifying disabled squares
 
 const App: React.FC = () => {
   const [red, setRed] = useState(createArrayOf());
@@ -88,6 +133,8 @@ const App: React.FC = () => {
   const colors = { red, yellow, green, blue };
   const setColors = { setRed, setYellow, setGreen, setBlue };
 
+  // const select = (index: number) =>
+
   const addStrike: DivClick = () =>
     strikes === 4 ? null : setStrikes(strikes + 1);
 
@@ -101,7 +148,7 @@ const App: React.FC = () => {
       setDice
     )(dice);
 
-  const selectNumberFromDice = selectNumber(dice);
+  // const selectNumberFromDice = selectNumber(dice);
 
   return (
     <div>
@@ -109,7 +156,7 @@ const App: React.FC = () => {
         showScores={showScores}
         statuses={colors}
         setStatuses={setColors}
-        setStatusOpen={selectNumberFromDice}
+        setStatusOpen={updateSquares}
       />
       <div className="flex mt-2">
         <div className="flex">
