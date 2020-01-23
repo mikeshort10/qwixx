@@ -3,7 +3,7 @@ import { Points, colorNames } from "./components/Points";
 import { ReactHook, DivClick, ButtonClick } from "./types";
 import { mapWithIndex, findLastIndex, replicate, map } from "fp-ts/lib/Array";
 import { Strike } from "./components/Strike";
-import { toNullable } from "fp-ts/lib/Option";
+import { toNullable, fromNullable, compact, flatten } from "fp-ts/lib/Option";
 import { flow } from "fp-ts/lib/function";
 import { calculateSelected } from "./components/ColorRow";
 import { Die } from "./components/Die";
@@ -27,6 +27,22 @@ const createArrayOf = (lowToHigh = true, length = 11): Square[] => {
       })
     );
 };
+
+const n = fromNullable(undefined);
+const s = fromNullable(1);
+
+const On = fromNullable(fromNullable(n));
+const Os = fromNullable(fromNullable(s));
+
+const compactedN = compact(On);
+const flattenedN = flatten(On);
+const compactedS = compact(Os);
+const flattenedS = flatten(Os);
+
+console.log(compactedN);
+console.log(flattenedN);
+console.log(compactedS);
+console.log(flattenedS);
 
 const squareIsSelected = ({ isSelected }: Square) => isSelected;
 
