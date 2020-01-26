@@ -2,14 +2,16 @@ import React from "react";
 import { mapWithIndex, reduce } from "fp-ts/lib/Array";
 import { NumberButton } from "./NumberButton";
 import { LockButton } from "./LockButton";
-import { Color, ButtonClick } from "../types";
-import { Square } from "../App";
+import { Color, ButtonClick, Square } from "../types";
 
-const points = [0, 1, 3, 10, 15, 21, 28, 36, 45, 55, 66, 78];
+const points = [0, 1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 66, 78];
 
 export const calculateSelected = reduce<Square, number>(
   0,
-  (acc, { isSelected }) => (isSelected ? acc + 1 : acc)
+  (acc, { isSelected, isLast }) => {
+    const addedPoints = isLast ? 2 : 1;
+    return isSelected ? acc + addedPoints : acc;
+  }
 );
 
 const createNumberButton = (
@@ -41,27 +43,32 @@ type ColorRowProps = {
   statuses: Square[];
   showScores: boolean;
   setStatusAtIndex: (index: number) => ButtonClick;
+  lockRow: ButtonClick;
+  isLocked: boolean;
 };
 
 export const ColorRow: React.FC<ColorRowProps> = ({
   color,
   statuses,
   setStatusAtIndex,
-  showScores
+  showScores,
+  lockRow,
+  isLocked
 }) => {
   const createRow = createNumberButtonRow(color, setStatusAtIndex);
   const createNumberRow = createRow;
   const numberRow = createNumberRow(statuses);
-  const isLocked = statuses[statuses.length - 1].isSelected;
-  const pointsInRow = points[calculateSelected(statuses) + (isLocked ? 1 : 0)];
+  const pointsInRow = points[calculateSelected(statuses)];
 
   return (
-    <div className={`flex items-stretch bg-${color}-500 mt-1 h-full`}>
+    <div
+      className={`flex justify-center items-stretch bg-${color}-500 px-2`}
+    >
       {numberRow}
-      <LockButton color={color} isLocked={isLocked} />
+      <LockButton color={color} isLocked={isLocked} lockRow={lockRow} />
       <div
-        className={`h-full w-10 flex justify-center items-center text-white ${
-          showScores ? "" : "hidden"
+        className={`well font-mono w-10 flex justify-center items-center text-${color}-100 bg-${color}-600 rounded ml-1 my-2 py-1 px-2 ${
+          showScores ? "" : "invisible"
         }`}
       >
         {pointsInRow}

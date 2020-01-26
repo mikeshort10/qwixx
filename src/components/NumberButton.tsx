@@ -1,6 +1,5 @@
 import React from "react";
-import { ButtonClick } from "../types";
-import { Square } from "../App";
+import { ButtonClick, Square } from "../types";
 
 type NumberProps = {
   square: Square;
@@ -19,11 +18,11 @@ export const NumberButton: React.FC<NumberProps> = ({
   const colorClass =
     isDisabled || isSelected
       ? ""
-      : `bg-${color}-300 text-${color}-500 hover:bg-${color}-200 active:bg-${color}-400`;
+      : `bg-${color}-300 shadow text-${color}-500 hover:bg-${color}-200 active:bg-${color}-400`;
   return (
     <button
       disabled={isDisabled}
-      className={`${colorClass} ${bgClass} font-bold rounded w-10 ml-1 my-2 py-1 px-2 `}
+      className={`${colorClass} ${bgClass} font-bold rounded w-10 ml-1 my-2 py-1 px-2`}
       onClick={setStatus}
     >
       {value}
