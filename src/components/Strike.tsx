@@ -1,6 +1,8 @@
 import React from "react";
 import { ReactHook, DivClick } from "../types";
 import { makeBy } from "fp-ts/lib/Array";
+import { flow, increment, decrement } from "fp-ts/lib/function";
+import { gt, ordNumber } from "fp-ts/lib/Ord";
 
 type StrikeProps = {
   value: string | null;
@@ -29,17 +31,28 @@ export const Strikes: React.FC<StrikesProps> = ({
   setStrikes,
   showScores
 }) => {
-  const updateStrikes = () => setStrikes(strikes + 1);
+  const addStrike = flow(increment, setStrikes);
+  const removeStrike = flow(decrement, setStrikes);
 
-  const showValue = showScores ? "5" : "X";
+  const handleClick = (strikes: number, n: number) => () =>
+    gt(ordNumber)(strikes, n) ? removeStrike(strikes) : addStrike(strikes);
 
-  const strikeArray = makeBy(4, i => (
-    <Strike
-      key={i}
-      value={strikes > i ? showValue : null}
-      setStrikes={updateStrikes}
-    />
-  ));
+  const showValue = showScores ? "-5" : "X";
 
-  return <div className="flex flex-col flex-wrap content-start h-48 w-32 mr-4">{strikeArray}</div>;
+  const strikeArray = makeBy(4, i => {
+    const setStrikes = handleClick(strikes, i);
+    return (
+      <Strike
+        key={i}
+        value={strikes > i ? showValue : null}
+        setStrikes={setStrikes}
+      />
+    );
+  });
+
+  return (
+    <div className="flex flex-col flex-wrap content-start h-48 w-32 mr-4">
+      {strikeArray}
+    </div>
+  );
 };

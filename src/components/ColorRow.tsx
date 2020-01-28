@@ -4,7 +4,8 @@ import { NumberButton } from "./NumberButton";
 import { LockButton } from "./LockButton";
 import { Color, ButtonClick, Square } from "../types";
 
-const points = [0, 1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 66, 78];
+const getTriangularNumber = (n: number): number =>
+  n < 1 ? n : n + getTriangularNumber(n - 1);
 
 export const calculateSelected = reduce<Square, number>(
   0,
@@ -34,9 +35,7 @@ const createNumberButton = (
 const createNumberButtonRow = (
   color: Color,
   setStatusAtIndex: (i: number) => ButtonClick
-) => {
-  return mapWithIndex(createNumberButton(color, setStatusAtIndex));
-};
+) => mapWithIndex(createNumberButton(color, setStatusAtIndex));
 
 type ColorRowProps = {
   color: Color;
@@ -45,6 +44,7 @@ type ColorRowProps = {
   setStatusAtIndex: (index: number) => ButtonClick;
   lockRow: ButtonClick;
   isLocked: boolean;
+  selfLocked: boolean;
 };
 
 export const ColorRow: React.FC<ColorRowProps> = ({
@@ -52,20 +52,17 @@ export const ColorRow: React.FC<ColorRowProps> = ({
   statuses,
   setStatusAtIndex,
   showScores,
-  lockRow,
-  isLocked
+  ...lockButtonProps
 }) => {
   const createRow = createNumberButtonRow(color, setStatusAtIndex);
   const createNumberRow = createRow;
   const numberRow = createNumberRow(statuses);
-  const pointsInRow = points[calculateSelected(statuses)];
+  const pointsInRow = getTriangularNumber(calculateSelected(statuses));
 
   return (
-    <div
-      className={`flex justify-center items-stretch bg-${color}-500 px-2`}
-    >
+    <div className={`flex justify-center items-stretch bg-${color}-500 px-2`}>
       {numberRow}
-      <LockButton color={color} isLocked={isLocked} lockRow={lockRow} />
+      <LockButton color={color} {...lockButtonProps} />
       <div
         className={`well font-mono w-10 flex justify-center items-center text-${color}-100 bg-${color}-600 rounded ml-1 my-2 py-1 px-2 ${
           showScores ? "" : "invisible"

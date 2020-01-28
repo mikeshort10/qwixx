@@ -13,14 +13,17 @@ type PointsProps = {
   showScores: boolean;
   readonly setStatusOpen: (
     colorState: Square[],
-    setColor: ReactHook<Square[]>
+    setColor: ReactHook<Square[]>,
+    color: Color
   ) => (index: number) => ButtonClick;
-  readonly lockRow: (
+  readonly toggleLock: (
+    isLocked: boolean
+  ) => (
     squares: Square[],
     setColor: ReactHook<Square[]>,
-    lockColor: () => void
+    lockUnlock: () => void
   ) => () => void;
-  readonly updateLocked: (color: Color) => () => void;
+  readonly updateLocked: (color: Color, isLocked: boolean) => () => void;
   locked: Locked;
 };
 
@@ -28,7 +31,7 @@ export const Points: React.FC<PointsProps> = ({
   statuses,
   setStatuses,
   setStatusOpen,
-  lockRow,
+  toggleLock,
   updateLocked,
   locked,
   ...props
@@ -36,11 +39,20 @@ export const Points: React.FC<PointsProps> = ({
   const createColorRow = (i: number, color: Color) => {
     const statusesAtColor = statuses[color];
     const setStatusesAtColor = setStatuses[getHookName(color)];
-    const setStatusAtIndex = setStatusOpen(statusesAtColor, setStatusesAtColor);
-    const lockColorRow = lockRow(
+    const setStatusAtIndex = setStatusOpen(
       statusesAtColor,
       setStatusesAtColor,
-      updateLocked(color)
+      color
+    );
+    const selfLocked = statuses[color][10].isSelected;
+    const lockColorRow = toggleLock(locked[color])(
+      statusesAtColor,
+      setStatusesAtColor,
+      toggleLock(locked[color])(
+        statusesAtColor,
+        setStatusesAtColor,
+        updateLocked(color, locked[color])
+      )
     );
     return (
       <ColorRow
@@ -50,10 +62,13 @@ export const Points: React.FC<PointsProps> = ({
         setStatusAtIndex={setStatusAtIndex}
         lockRow={lockColorRow}
         isLocked={locked[color]}
+        selfLocked={selfLocked}
         {...props}
       />
     );
   };
   const colorRows = mapWithIndex(createColorRow)(colorNames);
-  return <div className="flex flex-col max-w-2xl rounded shadow">{colorRows}</div>;
+  return (
+    <div className="flex flex-col max-w-2xl rounded shadow">{colorRows}</div>
+  );
 };

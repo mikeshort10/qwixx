@@ -1,4 +1,4 @@
-import { Square, ReactHook } from "../types";
+import { Square, ReactHook, Color } from "../types";
 import {
   makeBy,
   findLastIndex,
@@ -17,14 +17,25 @@ import {
 } from "fp-ts/lib/Option";
 import { pipe } from "fp-ts/lib/pipeable";
 import { Predicate, Endomorphism, not, flow } from "fp-ts/lib/function";
+import { snoc } from "fp-ts/lib/NonEmptyArray";
+import { indexIsSelectable } from "../App";
 
 export const createSquares = (lowToHigh = true): Square[] =>
-  makeBy(11, i => ({
-    isSelected: false,
-    isDisabled: false,
-    value: lowToHigh ? i + 2 : 12 - i,
-    isLast: i === 10
-  }));
+  pipe(
+    makeBy(10, i => ({
+      isSelected: false,
+      isDisabled: false,
+      value: lowToHigh ? i + 2 : 12 - i,
+      isLast: false
+    })),
+    x =>
+      snoc(x, {
+        isSelected: false,
+        isDisabled: false,
+        value: lowToHigh ? 12 : 2,
+        isLast: true
+      })
+  );
 
 const geqNumber = (x: number) => (y: number) => geq(ordNumber)(y, x);
 
@@ -57,7 +68,10 @@ type MRFIW = <A>(
   predicate: Predicate<A>
 ) => (end: number) => (as: A[]) => A[];
 
-const modifyRightFromIndexWhile: MRFIW = (modifier, predicate) => end => as =>
+export const modifyRightFromIndexWhile: MRFIW = (
+  modifier,
+  predicate
+) => end => as =>
   pipe(
     as,
     mapWithIndex((i, a) => {
@@ -75,18 +89,20 @@ const modifyWhileUnselected = modifyRightFromIndexWhile(
   not(isSelectable)
 );
 
-const trace = <A>(fn?: (x: A) => any) => (x: A) => {
+export const trace = <A>(fn?: (x: A) => any) => (x: A) => {
   console.log(fn ? fn(x) : x);
   return x;
 };
 
-export const updateSquares = (
+export const updateSquares = (dice: number[]) => (
   squares: Square[],
-  setColor: ReactHook<Square[]>
+  setColor: ReactHook<Square[]>,
+  color: Color
 ) => {
   return (index: number) => () =>
     flow(
       rowIsCloseable(squares),
+      // chain(indexIsSelectable(dice)(color, index)),
       mapOption(modifyWhileUnselected(index)),
       chain(modifyAt(index, (a: Square) => ({ ...a, isSelected: true }))),
       getOrElse(() => squares),
@@ -101,5 +117,14 @@ const disableAllUnselected = map((sq: Square) =>
 export const lockRow = (
   squares: Square[],
   setColor: ReactHook<Square[]>,
-  lockColor: () => void
-) => () => pipe(squares, trace(), disableAllUnselected, setColor, lockColor);
+  lock: () => void
+) => () => {
+  lock();
+  pipe(
+    squares,
+    disableAllUnselected,
+    setColor,
+    trace(() => "lock"),
+    lock
+  );
+};
