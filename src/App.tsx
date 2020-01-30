@@ -6,7 +6,7 @@ import { Strikes } from "./components/Strike";
 import { flow } from "fp-ts/lib/function";
 import { Dice } from "./components/Die";
 import { randomInt } from "fp-ts/lib/Random";
-import { reduceWithIndex, some } from "fp-ts/lib/Record";
+import { reduceWithIndex } from "fp-ts/lib/Record";
 import {
   createSquares,
   updateSquares,
@@ -16,6 +16,7 @@ import {
 } from "./functions";
 import { pipe } from "fp-ts/lib/pipeable";
 import { none, fromNullable } from "fp-ts/lib/Option";
+import { DiceSVG } from "./components/DiceSVG";
 
 const lockedState: Locked = {
   red: false,
@@ -122,7 +123,7 @@ const App: React.FC = () => {
   const setStatusOpen = updateSquares(dice);
 
   return (
-    <div className="rotate flex flex-col items-start md:items-center w-full h-144">
+    <div className="rotate flex flex-col items-start md:items-center md:mx-auto md:max-w-2xl h-144">
       <Points
         showScores={showScores}
         statuses={colors}
@@ -132,7 +133,7 @@ const App: React.FC = () => {
         updateLocked={updateLocked}
         locked={locked}
       />
-      <div className="flex justify-between mt-2 w-144">
+      <div className="flex justify-between mt-2 w-full">
         <Strikes
           strikes={strikes}
           setStrikes={setStrikes}

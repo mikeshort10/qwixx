@@ -68,7 +68,5 @@ export const Points: React.FC<PointsProps> = ({
     );
   };
   const colorRows = mapWithIndex(createColorRow)(colorNames);
-  return (
-    <div className="flex flex-col max-w-2xl rounded shadow">{colorRows}</div>
-  );
+  return <div className="flex flex-col w-full rounded shadow">{colorRows}</div>;
 };

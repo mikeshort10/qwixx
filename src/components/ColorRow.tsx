@@ -32,11 +32,6 @@ const createNumberButton = (
   };
 };
 
-const createNumberButtonRow = (
-  color: Color,
-  setStatusAtIndex: (i: number) => ButtonClick
-) => mapWithIndex(createNumberButton(color, setStatusAtIndex));
-
 type ColorRowProps = {
   color: Color;
   statuses: Square[];
@@ -54,13 +49,12 @@ export const ColorRow: React.FC<ColorRowProps> = ({
   showScores,
   ...lockButtonProps
 }) => {
-  const createRow = createNumberButtonRow(color, setStatusAtIndex);
-  const createNumberRow = createRow;
-  const numberRow = createNumberRow(statuses);
+  const createRow = mapWithIndex(createNumberButton(color, setStatusAtIndex));
+  const numberRow = createRow(statuses);
   const pointsInRow = getTriangularNumber(calculateSelected(statuses));
 
   return (
-    <div className={`flex justify-center items-stretch bg-${color}-500 px-2`}>
+    <div className={`flex w-full justify-around bg-${color}-500 px-2`}>
       {numberRow}
       <LockButton color={color} {...lockButtonProps} />
       <div

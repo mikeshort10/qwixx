@@ -2,6 +2,7 @@ import React from "react";
 import { mapWithIndex, makeBy } from "fp-ts/lib/Array";
 import { Color } from "../types";
 import { ToggleScoresButton } from "./ToggleScoresButton";
+import { DiceSVG } from "./DiceSVG";
 
 type DotProps = { isVisible: boolean; color: string };
 
@@ -12,7 +13,7 @@ const Dot: React.FC<DotProps> = ({ isVisible, color }) => {
 
 type CustomDieProps = { n: number; dotColor: string; dieColor: string };
 
-const createDiceMap: Array<(x: number) => boolean> = [
+export const createDiceMap: Array<(x: number) => boolean> = [
   x => true,
   x => x === 4,
   x => x % 8 === 0,
@@ -59,11 +60,11 @@ export const Dice: React.FC<DiceProps> = ({
   ];
 
   const dies = mapWithIndex((i, color: string) => (
-    <CustomDie
+    <DiceSVG
       key={i}
-      n={dice[i]}
-      dieColor={color === "white" ? "white" : `${color}-500`}
-      dotColor={color === "white" ? "black" : "white"}
+      side={64}
+      dots={dice[i]}
+      color={color === "white" ? "white" : `${color}`}
     />
   ))(diceColors);
 
