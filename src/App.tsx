@@ -122,7 +122,7 @@ const App: React.FC = () => {
   const setStatusOpen = updateSquares(dice);
 
   return (
-    <div className="rotate flex flex-col items-center h-144">
+    <div className="rotate flex flex-col items-start md:items-center w-full h-144">
       <Points
         showScores={showScores}
         statuses={colors}
