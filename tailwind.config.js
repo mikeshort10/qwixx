@@ -2,13 +2,15 @@ module.exports = {
   theme: {
     extend: {
       spacing: {
-        "14": "14rem"
+        "14": "14rem",
+        "144": "36rem"
       },
       height: {
         "36": "9rem"
       },
+      width: {},
       maxHeight: {
-        "48": "48rem"
+        "12": "48rem"
       }
     }
   },

@@ -93,7 +93,6 @@ const App: React.FC = () => {
   const setColors = { setRed, setYellow, setGreen, setBlue };
 
   useEffect(() => {
-    console.log("useEffect");
     flow(
       reduce(locked, (acc, color: Color) => {
         const { isSelected, isDisabled } = colors[color][10];
@@ -123,7 +122,7 @@ const App: React.FC = () => {
   const setStatusOpen = updateSquares(dice);
 
   return (
-    <div className="w-full h-full bg-gray-300 flex flex-col items-center m-0">
+    <div className="rotate flex flex-col items-center h-144">
       <Points
         showScores={showScores}
         statuses={colors}
@@ -133,7 +132,7 @@ const App: React.FC = () => {
         updateLocked={updateLocked}
         locked={locked}
       />
-      <div className="flex justify-center w-full mt-2">
+      <div className="flex justify-between mt-2 w-144">
         <Strikes
           strikes={strikes}
           setStrikes={setStrikes}

@@ -59,22 +59,27 @@ export const Dice: React.FC<DiceProps> = ({
   ];
 
   const dies = mapWithIndex((i, color: string) => (
-    <CustomDie key={i} n={dice[i]} dieColor={color === 'white' ? "white" : `${color}-500`} dotColor={color === "white" ? "black" : "white"} />
+    <CustomDie
+      key={i}
+      n={dice[i]}
+      dieColor={color === "white" ? "white" : `${color}-500`}
+      dotColor={color === "white" ? "black" : "white"}
+    />
   ))(diceColors);
 
   return (
-      <div className="flex flex-col flex-wrap content-end h-36 w-1/2">
-        {dies}
-        <button
-          className="h-16 rounded bg-gray-800 text-gray-100 mb-2 shadow"
-          onClick={rollDice}
-        >
-          Roll
-        </button>
-        <ToggleScoresButton
-          showScores={showScores}
-          toggleShowScores={toggleShowScores}
-        />
-      </div>
+    <div className="flex flex-col flex-wrap content-end h-36 w-1/2">
+      {dies}
+      <button
+        className="h-16 rounded bg-gray-800 text-gray-100 mb-2 shadow"
+        onClick={rollDice}
+      >
+        Roll
+      </button>
+      <ToggleScoresButton
+        showScores={showScores}
+        toggleShowScores={toggleShowScores}
+      />
+    </div>
   );
 };
