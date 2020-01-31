@@ -6,39 +6,49 @@ var port = process.env.PORT || 4000;
 var app = express();
 var server = require("http").createServer(app);
 var wss = new WS.Server({ server: server });
-var sendOthers = function (ws, id, others) {
+var sendOthers = function (wss, others) {
     return function (data) {
-        others.forEach(function (ws, i) {
-            if (i !== id) {
-                ws.send(data);
-            }
+        others.forEach(function (other, i) {
+            console.log(other !== wss);
+            other !== wss && wss.send(data);
         });
     };
 };
-var locked = { red: false, yellow: false, blue: false, green: false };
-var sockets = [];
-var wsReducer = function (ws, id, others) {
-    var communicate = sendOthers(ws, id, others);
+var newLocked = function () { return ({
+    red: false,
+    yellow: false,
+    blue: false,
+    green: false
+}); };
+var game = { locked: newLocked() };
+var wsReducer = function (wss, others) {
+    var communicate = sendOthers(wss, others);
     return function (data) {
         var _a = JSON.parse(data), type = _a.type, message = _a.message;
+        console.log(type);
         switch (type) {
             case "roll":
                 return communicate(data);
             case "closeRow":
-                locked[message] = true;
-                return communicate(JSON.stringify({ type: type, message: locked }));
+                game.locked[message] = true;
+                return communicate(JSON.stringify({
+                    type: type,
+                    message: { locked: game.locked, color: message }
+                }));
             case "leftGame":
-                console.log("player as left the game");
+                console.log("player has left the game");
                 break;
+            case "newGame":
+                game.locked = newLocked();
+                return communicate(JSON.stringify({ type: "newGame", message: game.locked }));
             default:
                 break;
         }
     };
 };
 wss.on("connection", function (ws) {
-    var id = sockets.length;
-    sockets.push(ws);
-    var messageReducer = wsReducer(ws, id, sockets);
+    console.log("connected");
+    var messageReducer = wsReducer(ws, wss.clients);
     ws.on("message", messageReducer);
 });
 wss.on("close", function () {
@@ -47,6 +57,6 @@ wss.on("close", function () {
 app.get("/", function (req, res) {
     console.log("NO! This is http. I am not a Krusty Krab.");
 });
-server.listen(port, "0.0.0.0", function () {
+server.listen(port, "localhost", function () {
     console.log("Listening on port " + port);
 });

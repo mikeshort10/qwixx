@@ -5,31 +5,50 @@ const express = require("express");
 const port = process.env.PORT || 4000;
 const app = express();
 const server = require("http").createServer(app);
-const wss = new WS.Server({ port });
+const wss = new WS.Server({ server });
 
 const sendOthers = (wss, others: any[]) => {
   return (data: string) => {
     others.forEach((other, i) => {
+      console.log(other !== wss);
       other !== wss && wss.send(data);
     });
   };
 };
 
-const locked = { red: false, yellow: false, blue: false, green: false };
+const newLocked = () => ({
+  red: false,
+  yellow: false,
+  blue: false,
+  green: false
+});
+
+const game = { locked: newLocked() };
 
 const wsReducer = (wss: any, others: any[]) => {
   const communicate = sendOthers(wss, others);
   return (data: string) => {
     const { type, message } = JSON.parse(data);
+    console.log(type);
     switch (type) {
       case "roll":
         return communicate(data);
       case "closeRow":
-        locked[message] = true;
-        return communicate(JSON.stringify({ type, message: locked }));
+        game.locked[message] = true;
+        return communicate(
+          JSON.stringify({
+            type,
+            message: { locked: game.locked, color: message }
+          })
+        );
       case "leftGame":
-        console.log("player as left the game");
+        console.log("player has left the game");
         break;
+      case "newGame":
+        game.locked = newLocked();
+        return communicate(
+          JSON.stringify({ type: "newGame", message: game.locked })
+        );
       default:
         break;
     }
@@ -37,6 +56,7 @@ const wsReducer = (wss: any, others: any[]) => {
 };
 
 wss.on("connection", ws => {
+  console.log("connected");
   const messageReducer = wsReducer(ws, wss.clients);
   ws.on("message", messageReducer);
 });
@@ -49,6 +69,6 @@ app.get("/", (req: Request, res: Response) => {
   console.log("NO! This is http. I am not a Krusty Krab.");
 });
 
-server.listen(port, "0.0.0.0", () => {
+server.listen(port, "localhost", () => {
   console.log(`Listening on port ${port}`);
 });

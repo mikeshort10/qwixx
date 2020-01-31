@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Points } from "./components/Points";
 import { Color, Locked, Square, ReactHook } from "./types";
-import { map } from "fp-ts/lib/Array";
+import { map, mapWithIndex } from "fp-ts/lib/Array";
 import { Strikes } from "./components/Strike";
 import { Dice } from "./components/Die";
 import { randomInt } from "fp-ts/lib/Random";
-import { createSquares, updateSquares, lockRow } from "./functions";
+import {
+  createSquares,
+  updateSquares,
+  lockRow,
+  geqNumber,
+  stringIsColor,
+  selectedInRow
+} from "./functions";
 import { pipe } from "fp-ts/lib/pipeable";
 
 // todo: unselect number
@@ -22,7 +29,7 @@ const lockedState = (): Locked => ({
 
 // const copySquares = map((sq: Square) => ({ ...sq }));
 
-const socket = new WebSocket("ws://0.0.0.0:4000/");
+const socket = new WebSocket(`ws://${window.location.hostname}:4000/`);
 
 let sendMessage = (x: string) => {};
 let stringifyAndSend = (type: string) => <M,>(message: M) => {
@@ -75,17 +82,50 @@ const App: React.FC = () => {
 
     socket.onmessage = ({ data }) => {
       const { type, message } = JSON.parse(data);
-      console.log(type);
       switch (type) {
         case "roll":
+          console.log(type, message);
           setDice(message);
           break;
-        case "closeRow":
-          console.log(message);
+        case "newGame":
+          if (message.red === undefined) {
+            break;
+          }
           setLocked(message);
+          setRed(createSquares());
+          setYellow(createSquares());
+          setGreen(createSquares(false));
+          setBlue(createSquares(false));
+          break;
+        case "closeRow":
+          const { color, locked } = message;
+          console.log(message);
+          if (stringIsColor(color)) {
+            console.log(color);
+            const [colorRow, setColor] = colors[color];
+            const enoughSelected = pipe(colorRow, selectedInRow, geqNumber(5));
+            if (enoughSelected) {
+              console.log(enoughSelected);
+              // eslint-disable-next-line no-restricted-globals
+              const selectLastInRow = confirm(
+                `A player has chosen to close ${color}. Would you like to close this row as well?`
+              );
+              const updatedSquares = mapWithIndex((i, sq: Square) => {
+                if (sq.isLast) {
+                  return { ...sq, isSelected: selectLastInRow };
+                }
+                return sq.isSelected ? sq : { ...sq, isDisabled: true };
+              });
+              setColor(updatedSquares);
+            }
+          }
+          setLocked(locked);
           break;
       }
     };
+  });
+
+  useEffect(() => {
     return () => {
       stringifyAndSend("leftGame")("");
       socket.close();
@@ -111,12 +151,9 @@ const App: React.FC = () => {
       return;
     }
     if (locked[updatedColor] === false) {
-      console.log(updatedColor, "is NOT locked");
-
       stringifyAndSend("closeRow")(updatedColor);
       setLocked({ ...locked, [updatedColor]: true });
     } else {
-      console.log(updatedColor, "is locked");
       const [colorRow, setColor] = colors[updatedColor];
       lockRow(colorRow, setColor, () => {})();
     }
@@ -159,6 +196,9 @@ const App: React.FC = () => {
           setStrikes={setStrikes}
           showScores={showScores}
         />
+        <button onClick={() => stringifyAndSend("newGame")("")}>
+          New Game
+        </button>
         <p>{socketConnected ? "Socket connected" : "Socket not connected"}</p>
         <Dice
           dice={dice}

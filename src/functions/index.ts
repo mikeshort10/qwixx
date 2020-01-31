@@ -20,6 +20,7 @@ import { pipe } from "fp-ts/lib/pipeable";
 import { Predicate, Endomorphism, not, flow } from "fp-ts/lib/function";
 import { snoc } from "fp-ts/lib/NonEmptyArray";
 import { reduceWithIndex } from "fp-ts/lib/Record";
+import { colorNames } from "../components/Points";
 
 export const createSquares = (lowToHigh = true): Square[] =>
   pipe(
@@ -38,13 +39,13 @@ export const createSquares = (lowToHigh = true): Square[] =>
       })
   );
 
-const geqNumber = (x: number) => (y: number) => geq(ordNumber)(y, x);
+export const geqNumber = (x: number) => (y: number) => geq(ordNumber)(y, x);
 
 const totalSelected = reduce(0, (acc, { isSelected }: Square) =>
   isSelected ? acc + 1 : acc
 );
 
-const rowIsCloseable = (squares: Square[]) => (index: number) =>
+export const rowIsCloseable = (squares: Square[]) => (index: number) =>
   index < squares.length - 1 || pipe(squares, totalSelected, geqNumber(5))
     ? some(squares)
     : none;
@@ -176,3 +177,10 @@ const unlockRow = (
 
 export const toggleLock = (isLocked: boolean) =>
   isLocked ? unlockRow : lockRow;
+
+export const stringIsColor = (color: any): color is Color =>
+  colorNames.includes(color);
+
+export const selectedInRow = reduce(0, (acc, { isSelected }: Square) =>
+  isSelected ? acc + 1 : acc
+);
