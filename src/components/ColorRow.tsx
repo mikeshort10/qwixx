@@ -37,7 +37,6 @@ type ColorRowProps = {
   statuses: Square[];
   showScores: boolean;
   setStatusAtIndex: (index: number) => ButtonClick;
-  lockRow: ButtonClick;
   isLocked: boolean;
   selfLocked: boolean;
 };
@@ -47,6 +46,7 @@ export const ColorRow: React.FC<ColorRowProps> = ({
   statuses,
   setStatusAtIndex,
   showScores,
+  children,
   ...lockButtonProps
 }) => {
   const createRow = mapWithIndex(createNumberButton(color, setStatusAtIndex));

@@ -16,3 +16,13 @@ export type Square = {
 export type Locked = Record<Color, boolean>;
 
 export type FCState<T> = [T, ReactHook<T>];
+
+export type Moves = {
+  [color in Color]: [number, number];
+} & { white: number };
+
+export type History = Record<Color, Square[]> & {
+  dice: number[];
+  strikes: number;
+  locked: Record<Color, boolean>;
+};

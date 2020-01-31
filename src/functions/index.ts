@@ -1,4 +1,4 @@
-import { Square, ReactHook, Color } from "../types";
+import { Square, ReactHook, Color, Moves } from "../types";
 import {
   makeBy,
   findLastIndex,
@@ -13,12 +13,13 @@ import {
   none,
   getOrElse,
   chain,
-  map as mapOption
+  map as mapOption,
+  fromNullable
 } from "fp-ts/lib/Option";
 import { pipe } from "fp-ts/lib/pipeable";
 import { Predicate, Endomorphism, not, flow } from "fp-ts/lib/function";
 import { snoc } from "fp-ts/lib/NonEmptyArray";
-import { indexIsSelectable } from "../App";
+import { reduceWithIndex } from "fp-ts/lib/Record";
 
 export const createSquares = (lowToHigh = true): Square[] =>
   pipe(
@@ -119,12 +120,59 @@ export const lockRow = (
   setColor: ReactHook<Square[]>,
   lock: () => void
 ) => () => {
-  lock();
+  pipe(squares, disableAllUnselected, trace(), setColor, lock);
+};
+
+// const updateLocked = (lockedColor: Color, isLocked: boolean) => {
+//   return () => {
+//     stringifyAndSend("closeRow")(lockedColor);
+//     setLocked({ ...locked, [lockedColor]: !isLocked });
+//   };
+// };
+
+const calculatePossibleMoves = (dice: number[]): Moves => {
+  const [red, yellow, w1, w2, green, blue] = dice;
+  const moves = { red, yellow, green, blue };
+  return reduceWithIndex(
+    { white: w1 + w2 } as Moves,
+    (color, acc, n: number) => ({
+      ...acc,
+      [color]: [n + w1, n + w2]
+    })
+  )(moves);
+};
+
+export const indexIsSelectable = (dice: number[]) => (
+  color: Color,
+  index: number
+) => (squares: Square[]) => {
+  const {
+    white,
+    [color]: [color1, color2]
+  } = calculatePossibleMoves(dice);
+  const { value } = squares[index];
+  console.log(calculatePossibleMoves(dice));
+  if (white !== value && color1 !== value && color2 !== value) {
+    return none;
+  }
+  return fromNullable(squares);
+};
+
+const isSelected = ({ isSelected }: Square) => isSelected;
+
+const removeDisabled = (square: Square) => ({ ...square, isDisabled: false });
+
+const unlockRow = (
+  squares: Square[],
+  setSquares: ReactHook<Square[]>,
+  unlock: () => void
+) => () =>
   pipe(
     squares,
-    disableAllUnselected,
-    setColor,
-    trace(() => "lock"),
-    lock
+    modifyRightFromIndexWhile(removeDisabled, isSelected)(11),
+    setSquares,
+    unlock
   );
-};
+
+export const toggleLock = (isLocked: boolean) =>
+  isLocked ? unlockRow : lockRow;

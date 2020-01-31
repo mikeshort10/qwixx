@@ -4,63 +4,39 @@ import { ColorRow } from "./ColorRow";
 import { ReactHook, Color, ButtonClick, Square, Locked } from "../types";
 
 export const colorNames: Color[] = ["red", "yellow", "green", "blue"];
-const getHookName = (color: Color): string =>
-  `set${color[0].toUpperCase()}${color.slice(1)}`;
 
 type PointsProps = {
-  statuses: Record<Color, Square[]>;
-  setStatuses: Record<string, ReactHook<Square[]>>;
+  statesAndHooks: Record<Color, [Square[], ReactHook<Square[]>]>;
   showScores: boolean;
   readonly setStatusOpen: (
     colorState: Square[],
     setColor: ReactHook<Square[]>,
     color: Color
   ) => (index: number) => ButtonClick;
-  readonly toggleLock: (
-    isLocked: boolean
-  ) => (
-    squares: Square[],
-    setColor: ReactHook<Square[]>,
-    lockUnlock: () => void
-  ) => () => void;
-  readonly updateLocked: (color: Color, isLocked: boolean) => () => void;
   locked: Locked;
 };
 
 export const Points: React.FC<PointsProps> = ({
-  statuses,
-  setStatuses,
+  statesAndHooks,
   setStatusOpen,
-  toggleLock,
-  updateLocked,
   locked,
+  children,
   ...props
 }) => {
   const createColorRow = (i: number, color: Color) => {
-    const statusesAtColor = statuses[color];
-    const setStatusesAtColor = setStatuses[getHookName(color)];
+    const [statusesAtColor, setStatusesAtColor] = statesAndHooks[color];
     const setStatusAtIndex = setStatusOpen(
       statusesAtColor,
       setStatusesAtColor,
       color
     );
-    const selfLocked = statuses[color][10].isSelected;
-    const lockColorRow = toggleLock(locked[color])(
-      statusesAtColor,
-      setStatusesAtColor,
-      toggleLock(locked[color])(
-        statusesAtColor,
-        setStatusesAtColor,
-        updateLocked(color, locked[color])
-      )
-    );
+    const selfLocked = statusesAtColor[10].isSelected;
     return (
       <ColorRow
         key={i}
         color={color}
         statuses={statusesAtColor}
         setStatusAtIndex={setStatusAtIndex}
-        lockRow={lockColorRow}
         isLocked={locked[color]}
         selfLocked={selfLocked}
         {...props}

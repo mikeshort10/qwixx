@@ -1,84 +1,41 @@
 import React, { useState, useEffect } from "react";
 import { Points } from "./components/Points";
-import { Color, Locked, ReactHook, Square } from "./types";
-import { map, reduce } from "fp-ts/lib/Array";
+import { Color, Locked, Square, ReactHook } from "./types";
+import { map } from "fp-ts/lib/Array";
 import { Strikes } from "./components/Strike";
-import { flow } from "fp-ts/lib/function";
 import { Dice } from "./components/Die";
 import { randomInt } from "fp-ts/lib/Random";
-import { reduceWithIndex } from "fp-ts/lib/Record";
-import {
-  createSquares,
-  updateSquares,
-  lockRow,
-  modifyRightFromIndexWhile,
-  trace
-} from "./functions";
+import { createSquares, updateSquares, lockRow } from "./functions";
 import { pipe } from "fp-ts/lib/pipeable";
-import { none, fromNullable } from "fp-ts/lib/Option";
-import { DiceSVG } from "./components/DiceSVG";
 
-const lockedState: Locked = {
+// todo: unselect number
+// todo: undo last move w/ websockets
+// todo: progressive web app
+// todo: styling changes for dice, buttons, strikes
+
+const lockedState = (): Locked => ({
   red: false,
   blue: false,
   green: false,
   yellow: false
+});
+
+// const copySquares = map((sq: Square) => ({ ...sq }));
+
+const socket = new WebSocket("ws://localhost:4000/");
+
+let sendMessage: (x: string) => void;
+let stringifyAndSend: (
+  type: string
+) => <M extends string | any[] = string | any[]>(message: M) => M;
+
+socket.onopen = () => {
+  sendMessage = (message: string) => socket.send(message);
+  stringifyAndSend = (type: string) => <M,>(message: M) => {
+    sendMessage(JSON.stringify({ type, message }));
+    return message;
+  };
 };
-
-type Moves = {
-  [color in Color]: [number, number];
-} & { white: number };
-
-const calculatePossibleMoves = (dice: number[]): Moves => {
-  const [red, yellow, w1, w2, green, blue] = dice;
-  const moves = { red, yellow, green, blue };
-  return reduceWithIndex(
-    { white: w1 + w2 } as Moves,
-    (color, acc, n: number) => ({
-      ...acc,
-      [color]: [n + w1, n + w2]
-    })
-  )(moves);
-};
-
-export const indexIsSelectable = (dice: number[]) => (
-  color: Color,
-  index: number
-) => (squares: Square[]) => {
-  const {
-    white,
-    [color]: [color1, color2]
-  } = calculatePossibleMoves(dice);
-  const { value } = squares[index];
-  console.log(calculatePossibleMoves(dice));
-  if (white !== value && color1 !== value && color2 !== value) {
-    return none;
-  }
-  return fromNullable(squares);
-};
-
-// todo: undo last move
-// todo: styling changes for dice, buttons, strikes
-// todo: websockets
-
-const isSelected = ({ isSelected }: Square) => isSelected;
-
-const removeDisabled = (square: Square) => ({ ...square, isDisabled: false });
-
-const unlockRow = (
-  squares: Square[],
-  setSquares: ReactHook<Square[]>,
-  unlock: () => void
-) => () =>
-  pipe(
-    squares,
-    modifyRightFromIndexWhile(removeDisabled, isSelected)(11),
-    setSquares,
-    trace(() => "hey"),
-    unlock
-  );
-
-const toggleLock = (isLocked: boolean) => (isLocked ? unlockRow : lockRow);
 
 const App: React.FC = () => {
   const [red, setRed] = useState(createSquares());
@@ -89,48 +46,110 @@ const App: React.FC = () => {
   const [showScores, setShowScores] = useState(false);
   const [dice, setDice] = useState([1, 2, 3, 4, 5, 6]);
   const [locked, setLocked] = useState(lockedState);
+  // const [history, setHistory] = useState([] as History[]);
+  // const [historyIndex, setHistoryIndex] = useState(0);
 
-  const colors: Record<Color, Square[]> = { red, yellow, green, blue };
-  const setColors = { setRed, setYellow, setGreen, setBlue };
+  const colors: Record<Color, [Square[], ReactHook<Square[]>]> = {
+    red: [red, setRed],
+    yellow: [yellow, setYellow],
+    green: [green, setGreen],
+    blue: [blue, setBlue]
+  };
+
+  // useEffect(() => {
+  //   setHistory([
+  //     ...history,
+  //     {
+  //       red: copySquares(red),
+  //       yellow: copySquares(yellow),
+  //       green: copySquares(green),
+  //       blue: copySquares(blue),
+  //       locked: { ...locked },
+  //       strikes,
+  //       dice: [...dice]
+  //     }
+  //   ]);
+  //   // setHistoryIndex(historyIndex + 1)
+  // }, [red, yellow, green, blue, locked, strikes, dice]);
 
   useEffect(() => {
-    flow(
-      reduce(locked, (acc, color: Color) => {
-        const { isSelected, isDisabled } = colors[color][10];
-        if (isSelected && locked[color] === false) {
-          return { ...acc, [color]: isSelected };
-        } else if (
-          isSelected === false &&
-          isDisabled === false &&
-          locked[color]
-        ) {
-          return { ...acc, [color]: isSelected };
-        }
-        return acc;
-      }),
-      setLocked
-    )(["red", "yellow", "green", "blue"]);
-  }, [colors, locked]);
+    socket.onmessage = ({ data }) => {
+      const { type, message } = JSON.parse(data);
+      switch (type) {
+        case "roll":
+          setDice(message);
+          break;
+        case "closeRow":
+          console.log(message);
+          setLocked(message);
+          break;
+      }
+    };
+    return () => {
+      stringifyAndSend("leftGame")("");
+      socket.close();
+    };
+  }, []);
 
   const toggleShowScores = () => setShowScores(!showScores);
 
-  const rollDice = () => flow(map(randomInt(1, 6)), setDice)(dice);
-
-  const updateLocked = (lockedColor: Color, isLocked: boolean) => {
-    return () => setLocked({ ...locked, [lockedColor]: !isLocked });
+  const rollDice = () => {
+    pipe(dice, map(randomInt(1, 6)), stringifyAndSend("roll"), setDice);
   };
 
+  const last = <A,>(arr: A[]): A => arr.slice(-1)[0];
+
+  useEffect(() => {
+    const updatedColor = (["red", "yellow", "green", "blue"] as Color[]).find(
+      (color: Color) => {
+        const { isSelected, isDisabled } = last(colors[color][0]);
+        return (isSelected || isDisabled) !== locked[color];
+      }
+    );
+    if (!updatedColor) {
+      return;
+    }
+    if (locked[updatedColor] === false) {
+      console.log(updatedColor, "is NOT locked");
+
+      stringifyAndSend("closeRow")(updatedColor);
+      setLocked({ ...locked, [updatedColor]: true });
+    } else {
+      console.log(updatedColor, "is locked");
+      const [colorRow, setColor] = colors[updatedColor];
+      lockRow(colorRow, setColor, () => {})();
+    }
+  }, [locked, colors]);
+
   const setStatusOpen = updateSquares(dice);
+
+  // const getPast = ({
+  //   red,
+  //   yellow,
+  //   green,
+  //   blue,
+  //   locked,
+  //   strikes,
+  //   dice
+  // }: History) => {
+  //   setRed(red);
+  //   setYellow(yellow);
+  //   setBlue(blue);
+  //   setGreen(green);
+  //   setBlue(blue);
+  //   setLocked(locked);
+  //   setStrikes(strikes);
+  //   setDice(dice);
+  // };
+
+  // const undo = flow(getPast);
 
   return (
     <div className="rotate flex flex-col items-start md:items-center md:mx-auto md:max-w-2xl h-144">
       <Points
         showScores={showScores}
-        statuses={colors}
-        setStatuses={setColors}
+        statesAndHooks={colors}
         setStatusOpen={setStatusOpen}
-        toggleLock={toggleLock}
-        updateLocked={updateLocked}
         locked={locked}
       />
       <div className="flex justify-between mt-2 w-full">
