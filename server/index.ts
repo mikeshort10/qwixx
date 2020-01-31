@@ -5,23 +5,20 @@ const express = require("express");
 const port = process.env.PORT || 4000;
 const app = express();
 const server = require("http").createServer(app);
-const wss = new WS.Server({ server });
+const wss = new WS.Server({ port });
 
-const sendOthers = (ws, id: number, others: any[]) => {
+const sendOthers = (wss, others: any[]) => {
   return (data: string) => {
-    others.forEach((ws, i) => {
-      if (i !== id) {
-        ws.send(data);
-      }
+    others.forEach((other, i) => {
+      other !== wss && wss.send(data);
     });
   };
 };
 
 const locked = { red: false, yellow: false, blue: false, green: false };
-const sockets: any[] = [];
 
-const wsReducer = (ws: any, id: number, others: any[]) => {
-  const communicate = sendOthers(ws, id, others);
+const wsReducer = (wss: any, others: any[]) => {
+  const communicate = sendOthers(wss, others);
   return (data: string) => {
     const { type, message } = JSON.parse(data);
     switch (type) {
@@ -40,9 +37,7 @@ const wsReducer = (ws: any, id: number, others: any[]) => {
 };
 
 wss.on("connection", ws => {
-  const id = sockets.length;
-  sockets.push(ws);
-  const messageReducer = wsReducer(ws, id, sockets);
+  const messageReducer = wsReducer(ws, wss.clients);
   ws.on("message", messageReducer);
 });
 
@@ -54,6 +49,6 @@ app.get("/", (req: Request, res: Response) => {
   console.log("NO! This is http. I am not a Krusty Krab.");
 });
 
-server.listen(port, () => {
+server.listen(port, "0.0.0.0", () => {
   console.log(`Listening on port ${port}`);
 });

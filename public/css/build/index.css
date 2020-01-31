@@ -591,23 +591,17 @@ body,
   background-color: #e2e8f0;
 }
 
-.rotate {
-  -webkit-transform: rotate(90deg);
-  transform: rotate(90deg);
-  -webkit-transform-origin: 100% 0%;
-  transform-origin: 100% 0%;
-  position: absolute;
-  top: 100vh;
-  width: 100vh;
-  right: 0;
-  min-width: 30rem;
-}
-
-@media (min-width: 768px) {
+@media (max-width: 768px) and (orientation: portrait) {
   .rotate {
-    -webkit-transform: rotate(0);
-    transform: rotate(0);
-    position: initial;
+    -webkit-transform: rotate(90deg);
+    transform: rotate(90deg);
+    -webkit-transform-origin: 100% 0%;
+    transform-origin: 100% 0%;
+    position: absolute;
+    top: 100vh;
+    width: 100vh;
+    right: 0;
+    min-width: 30rem;
   }
 }
 

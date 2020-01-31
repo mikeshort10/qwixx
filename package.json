@@ -33,7 +33,8 @@
     "eject": "react-scripts eject",
     "dev_server": "nodemon ./server/build/index.js",
     "start_server": "node ./server/build/index.js",
-    "dev": "yarn start & yarn dev_server & gulp watch_server & gulp watch"
+    "dev_frontend": "react-scripts start & gulp watch",
+    "dev": "yarn dev_server & yarn dev_frontend"
   },
   "eslintConfig": {
     "extends": "react-app"

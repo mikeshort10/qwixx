@@ -47,6 +47,6 @@ wss.on("close", function () {
 app.get("/", function (req, res) {
     console.log("NO! This is http. I am not a Krusty Krab.");
 });
-server.listen(port, function () {
+server.listen(port, "0.0.0.0", function () {
     console.log("Listening on port " + port);
 });

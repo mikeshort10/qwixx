@@ -1,17 +1,17 @@
 import React from "react";
-import { mapWithIndex, makeBy } from "fp-ts/lib/Array";
+import { mapWithIndex } from "fp-ts/lib/Array";
 import { Color } from "../types";
 import { ToggleScoresButton } from "./ToggleScoresButton";
 import { DiceSVG } from "./DiceSVG";
 
-type DotProps = { isVisible: boolean; color: string };
+// type DotProps = { isVisible: boolean; color: string };
 
-const Dot: React.FC<DotProps> = ({ isVisible, color }) => {
-  const visible = isVisible ? "" : "invisible";
-  return <input className={`bg-${color} rounded-full h-3 w-3 ${visible}`} />;
-};
+// const Dot: React.FC<DotProps> = ({ isVisible, color }) => {
+//   const visible = isVisible ? "" : "invisible";
+//   return <input className={`bg-${color} rounded-full h-3 w-3 ${visible}`} />;
+// };
 
-type CustomDieProps = { n: number; dotColor: string; dieColor: string };
+// type CustomDieProps = { n: number; dotColor: string; dieColor: string };
 
 export const createDiceMap: Array<(x: number) => boolean> = [
   x => true,
@@ -23,19 +23,19 @@ export const createDiceMap: Array<(x: number) => boolean> = [
   x => x % 3 !== 1
 ];
 
-const CustomDie: React.FC<CustomDieProps> = ({ n, dotColor, dieColor }) => {
-  const getIsVisible = createDiceMap[n];
-  const dots1 = makeBy(9, i => (
-    <Dot key={i} isVisible={getIsVisible(i)} color={dotColor} />
-  ));
-  return (
-    <div
-      className={`bg-${dieColor} shadow rounded-lg w-16 h-16 px-3 py-3 mr-2 mb-2 flex flex-wrap justify-center items-center`}
-    >
-      {dots1}
-    </div>
-  );
-};
+// const CustomDie: React.FC<CustomDieProps> = ({ n, dotColor, dieColor }) => {
+//   const getIsVisible = createDiceMap[n];
+//   const dots1 = makeBy(9, i => (
+//     <Dot key={i} isVisible={getIsVisible(i)} color={dotColor} />
+//   ));
+//   return (
+//     <div
+//       className={`bg-${dieColor} shadow rounded-lg w-16 h-16 px-3 py-3 mr-2 mb-2 flex flex-wrap justify-center items-center`}
+//     >
+//       {dots1}
+//     </div>
+//   );
+// };
 
 type DiceProps = {
   dice: number[];

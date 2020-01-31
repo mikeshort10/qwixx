@@ -22,19 +22,12 @@ const lockedState = (): Locked => ({
 
 // const copySquares = map((sq: Square) => ({ ...sq }));
 
-const socket = new WebSocket("ws://localhost:4000/");
+const socket = new WebSocket("ws://0.0.0.0:4000/");
 
-let sendMessage: (x: string) => void;
-let stringifyAndSend: (
-  type: string
-) => <M extends string | any[] = string | any[]>(message: M) => M;
-
-socket.onopen = () => {
-  sendMessage = (message: string) => socket.send(message);
-  stringifyAndSend = (type: string) => <M,>(message: M) => {
-    sendMessage(JSON.stringify({ type, message }));
-    return message;
-  };
+let sendMessage = (x: string) => {};
+let stringifyAndSend = (type: string) => <M,>(message: M) => {
+  sendMessage(JSON.stringify({ type, message }));
+  return message;
 };
 
 const App: React.FC = () => {
@@ -48,6 +41,8 @@ const App: React.FC = () => {
   const [locked, setLocked] = useState(lockedState);
   // const [history, setHistory] = useState([] as History[]);
   // const [historyIndex, setHistoryIndex] = useState(0);
+
+  const [socketConnected, setSocketConnected] = useState(false);
 
   const colors: Record<Color, [Square[], ReactHook<Square[]>]> = {
     red: [red, setRed],
@@ -73,8 +68,14 @@ const App: React.FC = () => {
   // }, [red, yellow, green, blue, locked, strikes, dice]);
 
   useEffect(() => {
+    socket.onopen = () => {
+      setSocketConnected(true);
+      sendMessage = (message: string) => socket.send(message);
+    };
+
     socket.onmessage = ({ data }) => {
       const { type, message } = JSON.parse(data);
+      console.log(type);
       switch (type) {
         case "roll":
           setDice(message);
@@ -158,6 +159,7 @@ const App: React.FC = () => {
           setStrikes={setStrikes}
           showScores={showScores}
         />
+        <p>{socketConnected ? "Socket connected" : "Socket not connected"}</p>
         <Dice
           dice={dice}
           rollDice={rollDice}

@@ -1,5 +1,4 @@
 import React from "react";
-import { mapWithIndex } from "fp-ts/lib/Record";
 import { makeBy } from "fp-ts/lib/Array";
 import { createDiceMap } from "./Die";
 
