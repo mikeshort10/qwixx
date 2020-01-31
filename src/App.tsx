@@ -84,7 +84,7 @@ const App: React.FC = () => {
       const { type, message } = JSON.parse(data);
       switch (type) {
         case "roll":
-          console.log(type, message);
+          console.log("received", type, message);
           setDice(message);
           break;
         case "newGame":

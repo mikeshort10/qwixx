@@ -10,8 +10,7 @@ const wss = new WS.Server({ server });
 const sendOthers = (wss, others: any[]) => {
   return (data: string) => {
     others.forEach((other, i) => {
-      console.log(other !== wss);
-      other !== wss && wss.send(data);
+      other !== wss && other.send(data);
     });
   };
 };
@@ -29,7 +28,6 @@ const wsReducer = (wss: any, others: any[]) => {
   const communicate = sendOthers(wss, others);
   return (data: string) => {
     const { type, message } = JSON.parse(data);
-    console.log(type);
     switch (type) {
       case "roll":
         return communicate(data);
