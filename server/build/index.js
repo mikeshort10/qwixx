@@ -6,13 +6,13 @@ var port = process.env.PORT || 4000;
 var app = express();
 var server = require("http").createServer(app);
 var wss = new WS.Server({ server: server });
-var sendOthers = function (wss, others) {
+var send = function (wss, others) { return function (incSelf) {
     return function (data) {
         others.forEach(function (other, i) {
-            other !== wss && other.send(data);
+            (incSelf || other !== wss) && other.send(data);
         });
     };
-};
+}; };
 var newLocked = function () { return ({
     red: false,
     yellow: false,
@@ -21,15 +21,17 @@ var newLocked = function () { return ({
 }); };
 var game = { locked: newLocked() };
 var wsReducer = function (wss, others) {
-    var communicate = sendOthers(wss, others);
+    var communicate = send(wss, others);
+    var communicateAll = communicate(true);
+    var communicateOthers = communicate(false);
     return function (data) {
         var _a = JSON.parse(data), type = _a.type, message = _a.message;
         switch (type) {
             case "roll":
-                return communicate(data);
+                return communicateOthers(data);
             case "closeRow":
                 game.locked[message] = true;
-                return communicate(JSON.stringify({
+                return communicateOthers(JSON.stringify({
                     type: type,
                     message: { locked: game.locked, color: message }
                 }));
@@ -37,8 +39,10 @@ var wsReducer = function (wss, others) {
                 console.log("player has left the game");
                 break;
             case "newGame":
+                console.log("received request for new game");
                 game.locked = newLocked();
-                return communicate(JSON.stringify({ type: "newGame", message: game.locked }));
+                return communicateAll((console.log(game.locked),
+                    JSON.stringify({ type: "newGame", message: game.locked })));
             default:
                 break;
         }

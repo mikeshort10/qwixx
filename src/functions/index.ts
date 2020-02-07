@@ -1,57 +1,47 @@
-import { Square, ReactHook, Color, Moves } from "../types";
-import {
-  makeBy,
-  findLastIndex,
-  mapWithIndex,
-  modifyAt,
-  reduce,
-  map
-} from "fp-ts/lib/Array";
+import { Square, Color, Moves, Locked } from "../types";
+import * as A from "fp-ts/lib/Array";
 import { geq, ordNumber } from "fp-ts/lib/Ord";
-import {
-  some,
-  none,
-  getOrElse,
-  chain,
-  map as mapOption,
-  fromNullable
-} from "fp-ts/lib/Option";
+import * as O from "fp-ts/lib/Option";
 import { pipe } from "fp-ts/lib/pipeable";
-import { Predicate, Endomorphism, not, flow } from "fp-ts/lib/function";
-import { snoc } from "fp-ts/lib/NonEmptyArray";
-import { reduceWithIndex } from "fp-ts/lib/Record";
+import { Predicate, Endomorphism, flow } from "fp-ts/lib/function";
+import * as R from "fp-ts/lib/Record";
 import { colorNames } from "../components/Points";
+import { strictEqual } from "fp-ts/lib/Eq";
 
-export const createSquares = (lowToHigh = true): Square[] =>
-  pipe(
-    makeBy(10, i => ({
+export const getTriangularNumber = (n: number): number =>
+  n < 1 ? n : n + getTriangularNumber(n - 1);
+
+export const calculateSelected = (squares: Square[]) => {
+  const isLast = (i: number) => strictEqual(squares.length - 1, i);
+  return A.reduceWithIndex<Square, number>(0, (i, acc, { isSelected }) => {
+    const addedPoints = isLast(i) ? 2 : 1;
+    return isSelected ? acc + addedPoints : acc;
+  })(squares);
+};
+
+export const getScoreForRow = flow(calculateSelected, getTriangularNumber);
+
+export const createSquares = (lowToHigh = true) =>
+  A.makeBy(
+    11,
+    (i): Square => ({
       isSelected: false,
-      isDisabled: false,
-      value: lowToHigh ? i + 2 : 12 - i,
-      isLast: false
-    })),
-    x =>
-      snoc(x, {
-        isSelected: false,
-        isDisabled: false,
-        value: lowToHigh ? 12 : 2,
-        isLast: true
-      })
+      value: lowToHigh ? i + 2 : 12 - i
+    })
   );
 
 export const geqNumber = (x: number) => (y: number) => geq(ordNumber)(y, x);
 
-const totalSelected = reduce(0, (acc, { isSelected }: Square) =>
+const totalSelected = A.reduce(0, (acc, { isSelected }: Square) =>
   isSelected ? acc + 1 : acc
 );
 
 export const rowIsCloseable = (squares: Square[]) => (index: number) =>
   index < squares.length - 1 || pipe(squares, totalSelected, geqNumber(5))
-    ? some(squares)
-    : none;
+    ? O.some(squares)
+    : O.none;
 
-const isSelectable = ({ isDisabled, isSelected }: Square) =>
-  !isDisabled && !isSelected;
+// const isSelectable = ({ isSelected }: Square) => !isSelected;
 
 const isBetweenExc = (end: number) => (start: number) => (n: number) => {
   return start < n && n < end;
@@ -60,8 +50,8 @@ const isBetweenExc = (end: number) => (start: number) => (n: number) => {
 const getRangeToUpdate = <A>(end: number, predicate: Predicate<A>, as: A[]) =>
   pipe(
     as,
-    findLastIndex(predicate),
-    getOrElse(() => -1),
+    A.findLastIndex(predicate),
+    O.getOrElse(() => -1),
     isBetweenExc(end)
   );
 
@@ -76,20 +66,19 @@ export const modifyRightFromIndexWhile: MRFIW = (
 ) => end => as =>
   pipe(
     as,
-    mapWithIndex((i, a) => {
-      // console.log(getRangeToUpdate(end, predicate, as)(i));
+    A.mapWithIndex((i, a) => {
       return getRangeToUpdate(end, predicate, as)(i)
         ? modifier({ ...a })
         : { ...a };
     })
   );
 
-const selectSquare = (square: Square) => ({ ...square, isDisabled: true });
+// const selectSquare = (square: Square) => ({ ...square, isDisabled: true });
 
-const modifyWhileUnselected = modifyRightFromIndexWhile(
-  selectSquare,
-  not(isSelectable)
-);
+// const modifyWhileUnselected = modifyRightFromIndexWhile(
+//   selectSquare,
+//   not(isSelectable)
+// );
 
 export const trace = <A>(fn?: (x: A) => any) => (x: A) => {
   console.log(fn ? fn(x) : x);
@@ -98,31 +87,45 @@ export const trace = <A>(fn?: (x: A) => any) => (x: A) => {
 
 export const updateSquares = (dice: number[]) => (
   squares: Square[],
-  setColor: ReactHook<Square[]>,
-  color: Color
+  setColor: (newSquares: Square[]) => void
 ) => {
   return (index: number) => () =>
-    flow(
+    pipe(
+      index,
       rowIsCloseable(squares),
       // chain(indexIsSelectable(dice)(color, index)),
-      mapOption(modifyWhileUnselected(index)),
-      chain(modifyAt(index, (a: Square) => ({ ...a, isSelected: true }))),
-      getOrElse(() => squares),
+      // O.map(modifyWhileUnselected(index)),
+      O.chain(
+        A.modifyAt(index, (a: Square) => ({ ...a, isSelected: !a.isSelected }))
+      ),
+      O.getOrElse(() => squares),
       setColor
-    )(index);
+    );
 };
 
-const disableAllUnselected = map((sq: Square) =>
-  sq.isSelected ? sq : { ...sq, isDisabled: true }
-);
+// const indexIsSelected = (squares: Square[]) => (index: number) =>
+//   pipe(A.lookup(index, squares), O.map(isSelected), O.getOrElse(constFalse));
 
-export const lockRow = (
-  squares: Square[],
-  setColor: ReactHook<Square[]>,
-  lock: () => void
-) => () => {
-  pipe(squares, disableAllUnselected, trace(), setColor, lock);
-};
+export const resetColors = (): Record<Color, Square[]> => ({
+  red: createSquares(),
+  yellow: createSquares(),
+  blue: createSquares(false),
+  green: createSquares(false)
+});
+
+export const last = <A>(arr: A[]): A => arr.slice(-1)[0];
+
+// const disableAllUnselected = A.map((sq: Square) =>
+//   sq.isSelected ? sq : { ...sq, isDisabled: true }
+// );
+
+// export const lockRow = (
+//   squares: Square[],
+//   setColor: (newSquares: Square[]) => void,
+//   lock: () => void
+// ) => () => {
+//   pipe(squares, disableAllUnselected, setColor, lock);
+// };
 
 // const updateLocked = (lockedColor: Color, isLocked: boolean) => {
 //   return () => {
@@ -134,7 +137,7 @@ export const lockRow = (
 const calculatePossibleMoves = (dice: number[]): Moves => {
   const [red, yellow, w1, w2, green, blue] = dice;
   const moves = { red, yellow, green, blue };
-  return reduceWithIndex(
+  return R.reduceWithIndex(
     { white: w1 + w2 } as Moves,
     (color, acc, n: number) => ({
       ...acc,
@@ -152,35 +155,44 @@ export const indexIsSelectable = (dice: number[]) => (
     [color]: [color1, color2]
   } = calculatePossibleMoves(dice);
   const { value } = squares[index];
-  console.log(calculatePossibleMoves(dice));
   if (white !== value && color1 !== value && color2 !== value) {
-    return none;
+    return O.none;
   }
-  return fromNullable(squares);
+  return O.fromNullable(squares);
 };
 
-const isSelected = ({ isSelected }: Square) => isSelected;
+// const removeDisabled = (square: Square) => ({ ...square, isDisabled: false });
 
-const removeDisabled = (square: Square) => ({ ...square, isDisabled: false });
+// const unlockRow = (
+//   squares: Square[],
+//   setSquares: ReactHook<Square[]>,
+//   unlock: () => void
+// ) => () =>
+//   pipe(
+//     squares,
+//     // modifyRightFromIndexWhile(removeDisabled, isSelected)(11),
+//     setSquares,
+//     unlock
+//   );
 
-const unlockRow = (
-  squares: Square[],
-  setSquares: ReactHook<Square[]>,
-  unlock: () => void
-) => () =>
-  pipe(
-    squares,
-    modifyRightFromIndexWhile(removeDisabled, isSelected)(11),
-    setSquares,
-    unlock
-  );
-
-export const toggleLock = (isLocked: boolean) =>
-  isLocked ? unlockRow : lockRow;
+// export const toggleLock = (isLocked: boolean) =>
+//   isLocked ? unlockRow : lockRow;
 
 export const stringIsColor = (color: any): color is Color =>
   colorNames.includes(color);
 
-export const selectedInRow = reduce(0, (acc, { isSelected }: Square) =>
+export const selectedInRow = A.reduce(0, (acc, { isSelected }: Square) =>
   isSelected ? acc + 1 : acc
 );
+
+// todo: unselect number
+// todo: undo last move w/ websockets
+// todo: progressive web app
+// todo: styling changes for dice, buttons, strikes
+
+export const lockedState = (): Locked => ({
+  red: false,
+  blue: false,
+  green: false,
+  yellow: false
+});

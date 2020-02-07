@@ -7,10 +7,10 @@ const app = express();
 const server = require("http").createServer(app);
 const wss = new WS.Server({ server });
 
-const sendOthers = (wss, others: any[]) => {
+const send = (wss, others: any[]) => (incSelf: boolean) => {
   return (data: string) => {
     others.forEach((other, i) => {
-      other !== wss && other.send(data);
+      (incSelf || other !== wss) && other.send(data);
     });
   };
 };
@@ -25,15 +25,17 @@ const newLocked = () => ({
 const game = { locked: newLocked() };
 
 const wsReducer = (wss: any, others: any[]) => {
-  const communicate = sendOthers(wss, others);
-  return (data: string) => {
+  const communicate = send(wss, others);
+  const communicateAll = communicate(true);
+  const communicateOthers = communicate(false);
+  return (data: string): void => {
     const { type, message } = JSON.parse(data);
     switch (type) {
       case "roll":
-        return communicate(data);
+        return communicateOthers(data);
       case "closeRow":
         game.locked[message] = true;
-        return communicate(
+        return communicateOthers(
           JSON.stringify({
             type,
             message: { locked: game.locked, color: message }
@@ -43,9 +45,11 @@ const wsReducer = (wss: any, others: any[]) => {
         console.log("player has left the game");
         break;
       case "newGame":
+        console.log("received request for new game");
         game.locked = newLocked();
-        return communicate(
-          JSON.stringify({ type: "newGame", message: game.locked })
+        return communicateAll(
+          (console.log(game.locked),
+          JSON.stringify({ type: "newGame", message: game.locked }))
         );
       default:
         break;

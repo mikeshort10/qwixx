@@ -14,13 +14,14 @@
     "ws": "^7.2.1"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "yarn build && yarn start_server & yarn frontend_start",
+    "frontend_start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "dev_server": "nodemon ./server/build/index.js & gulp watch_server",
     "start_server": "node ./server/build/index.js",
-    "dev_frontend": "react-scripts start & gulp watch",
+    "dev_frontend": "frontend_start & gulp watch",
     "dev": "yarn dev_server & yarn dev_frontend"
   },
   "eslintConfig": {

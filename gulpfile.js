@@ -6,8 +6,6 @@ const tailwindcss = require("tailwindcss");
 const ts = require("gulp-typescript");
 const tsConfig = require("./tsconfig.json");
 
-console.log(tsConfig);
-
 gulp.task("css", function() {
   const preprocessors = [autoprefixer, tailwindcss];
   return gulp

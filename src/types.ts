@@ -9,8 +9,8 @@ export type DivClick = (e: React.MouseEvent<HTMLDivElement>) => void;
 export type Square = {
   value: number;
   isSelected: boolean;
-  isDisabled: boolean;
-  isLast: boolean;
+  // isDisabled: boolean;
+  // isLast: boolean;
 };
 
 export type Locked = Record<Color, boolean>;
