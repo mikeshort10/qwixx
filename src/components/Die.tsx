@@ -3,17 +3,31 @@ import { mapWithIndex } from "fp-ts/lib/Array";
 import { Color } from "../types";
 import { DiceSVG } from "./DiceSVG";
 import { Button } from "./Button";
-import { constVoid } from "fp-ts/lib/function";
 import { ScoreWell } from "./ColorRow";
+import { strictEqual } from "fp-ts/lib/Eq";
+import { flow, not, constTrue, constVoid } from "fp-ts/lib/function";
+
+type DotProps = { isVisible: boolean; color: string };
+
+const Dot: React.FC<DotProps> = ({ isVisible, color }) => {
+  const visible = isVisible ? "" : "invisible";
+  return <input className={`bg-${color} rounded-full h-3 w-3 ${visible}`} />;
+};
+
+type CustomDieProps = { n: number; dotColor: string; dieColor: string };
+
+const modulo = (m: number) => (x: number) => x % m;
+
+const equals = (a: number) => (b: number) => strictEqual(a, b);
 
 export const createDiceMap: Array<(x: number) => boolean> = [
-  x => true,
-  x => x === 4,
-  x => x % 8 === 0,
-  x => x % 4 === 0,
-  x => x % 2 === 0 && x !== 4,
-  x => x % 2 === 0,
-  x => x % 3 !== 1
+  constTrue,
+  equals(4),
+  flow(modulo(8), equals(0)),
+  flow(modulo(4), equals(0)),
+  x => x % 2 === 0 && equals(4)(x),
+  flow(modulo(2), equals(0)),
+  flow(modulo(3), not(equals(0)))
 ];
 
 type DiceProps = {
